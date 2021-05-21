@@ -27,10 +27,14 @@ export async function loadFiles(
   }
 
   const filesToScan: IacFileData[] = [];
+  const emptyFiles: string[] = [];
   for (const filePath of filePaths) {
     try {
       const fileData = await tryLoadFileData(filePath);
       if (fileData) {
+        if (fileData.fileContent === '') {
+          emptyFiles.push(fileData.filePath);
+        }
         filesToScan.push(fileData);
       }
     } catch (e) {
@@ -42,7 +46,12 @@ export async function loadFiles(
     throw new NoFilesToScanError();
   }
 
-  return filesToScan;
+  return filesToScan.filter(
+    (fileToScan) =>
+      !emptyFiles.some(
+        (emptyFilePath) => fileToScan.filePath === emptyFilePath,
+      ),
+  );
 }
 
 function getFilePathsFromDirectory(
@@ -88,6 +97,7 @@ export class NoFilesToScanError extends CustomError {
       'Could not find any valid infrastructure as code files. Supported file extensions are tf, yml, yaml & json.\nMore information can be found by running `snyk iac test --help` or through our documentation:\nhttps://support.snyk.io/hc/en-us/articles/360012429477-Test-your-Kubernetes-files-with-our-CLI-tool\nhttps://support.snyk.io/hc/en-us/articles/360013723877-Test-your-Terraform-files-with-our-CLI-tool';
   }
 }
+
 export class FailedToLoadFileError extends CustomError {
   constructor(filename: string) {
     super('Failed to load file content');
