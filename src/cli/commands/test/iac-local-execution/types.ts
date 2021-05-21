@@ -93,6 +93,7 @@ export type SafeAnalyticsOutput = Omit<
 export enum EngineType {
   Kubernetes,
   Terraform,
+  CloudFormation,
   Custom,
 }
 

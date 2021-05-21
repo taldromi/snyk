@@ -8,6 +8,7 @@ import {
   IacFileParsed,
 } from '../types';
 
+process.env.YAML_SILENCE_WARNINGS = 'true';
 export const REQUIRED_K8S_FIELDS = ['apiVersion', 'kind', 'metadata'];
 
 export function assertHelmAndThrow(fileData: IacFileData) {
@@ -21,13 +22,21 @@ export function assertHelmAndThrow(fileData: IacFileData) {
   });
 }
 
-export function tryParsingKubernetesFile(
+export function tryParsingYAMLFile(
   fileData: IacFileData,
   yamlDocuments: any[],
 ): IacFileParsed[] {
   assertHelmAndThrow(fileData);
 
   return yamlDocuments.map((parsedYamlDocument, docId) => {
+    if (parsedYamlDocument.hasOwnProperty('Resources')) {
+      return {
+        ...fileData,
+        jsonContent: parsedYamlDocument,
+        projectType: IacProjectType.CLOUDFORMATION,
+        engineType: EngineType.CloudFormation,
+      };
+    }
     if (
       REQUIRED_K8S_FIELDS.every((requiredField) =>
         parsedYamlDocument.hasOwnProperty(requiredField),

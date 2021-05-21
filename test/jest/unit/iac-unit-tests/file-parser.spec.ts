@@ -5,7 +5,7 @@ import {
   UnsupportedFileTypeError,
   parseFiles,
 } from '../../../../src/cli/commands/test/iac-local-execution/file-parser';
-import { MissingRequiredFieldsInKubernetesYamlError } from '../../../../src/cli/commands/test/iac-local-execution/parsers/kubernetes-parser';
+import { MissingRequiredFieldsInKubernetesYamlError } from '../../../../src/cli/commands/test/iac-local-execution/parsers/yaml-parser';
 import {
   FailedToParseTerraformFileError,
   tryParsingTerraformFile,
@@ -29,8 +29,14 @@ import {
   invalidJsonFileDataStub,
 } from './file-parser.fixtures';
 import { IacFileData } from '../../../../src/cli/commands/test/iac-local-execution/types';
-import { tryParsingKubernetesFile } from '../../../../dist/cli/commands/test/iac-local-execution/parsers/kubernetes-parser';
+import { tryParsingYAMLFile } from '../../../../dist/cli/commands/test/iac-local-execution/parsers/kubernetes-parser';
 import { IacFileTypes } from '../../../../dist/lib/iac/constants';
+import {
+  cloudFormationJSONFileDataStub,
+  cloudFormationYAMLFileDataStub,
+  expectedCloudFormationJSONParsingResult,
+  expectedCloudFormationYAMLParsingResult,
+} from './file-parser.cloudformation.fixtures';
 
 const filesToParse: IacFileData[] = [
   kubernetesYamlFileDataStub,
@@ -38,6 +44,8 @@ const filesToParse: IacFileData[] = [
   terraformFileDataStub,
   terraformPlanDataStub,
   multipleKubernetesYamlsFileDataStub,
+  cloudFormationYAMLFileDataStub,
+  cloudFormationJSONFileDataStub,
 ];
 
 describe('parseFiles', () => {
@@ -54,6 +62,8 @@ describe('parseFiles', () => {
       ...expectedMultipleKubernetesYamlsParsingResult,
       docId: 1,
     });
+    expect(parsedFiles[6]).toEqual(expectedCloudFormationYAMLParsingResult);
+    expect(parsedFiles[7]).toEqual(expectedCloudFormationJSONParsingResult);
     expect(failedFiles.length).toEqual(0);
   });
 
@@ -122,7 +132,7 @@ describe('parseFiles', () => {
       fileType: 'yaml',
     };
 
-    expect(() => tryParsingKubernetesFile(helmFileData, [{}])).toThrowError(
+    expect(() => tryParsingYAMLFile(helmFileData, [{}])).toThrowError(
       'Failed to parse Helm file',
     );
   });

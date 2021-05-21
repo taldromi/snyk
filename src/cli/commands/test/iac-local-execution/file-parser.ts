@@ -2,8 +2,8 @@ import * as YAML from 'yaml';
 import {
   MissingRequiredFieldsInKubernetesYamlError,
   REQUIRED_K8S_FIELDS,
-  tryParsingKubernetesFile,
-} from './parsers/kubernetes-parser';
+  tryParsingYAMLFile,
+} from './parsers/yaml-parser';
 import { tryParsingTerraformFile } from './parsers/terraform-file-parser';
 import {
   isTerraformPlan,
@@ -11,6 +11,7 @@ import {
 } from './parsers/terraform-plan-parser';
 
 import {
+  EngineType,
   IaCErrorCodes,
   IacFileData,
   IacFileParsed,
@@ -22,6 +23,7 @@ import {
 import * as analytics from '../../../../lib/analytics';
 import { CustomError } from '../../../../lib/errors';
 import { getErrorStringCode } from './error-utils';
+import { IacProjectType } from '../../../../lib/iac/constants';
 
 export async function parseFiles(
   filesData: IacFileData[],
@@ -68,6 +70,7 @@ function parseYAMLOrJSONFileData(fileData: IacFileData): any[] {
     // the YAML library can parse both YAML and JSON content, as well as content with singe/multiple YAMLs
     // by using this library we don't have to disambiguate between these different contents ourselves
     yamlDocuments = YAML.parseAllDocuments(fileData.fileContent).map((doc) => {
+      // TODO: what do we want to do about Semantic Errors like duplicate keys etc, e.g YAMLSemanticError?
       if (doc.errors.length !== 0) {
         throw doc.errors[0];
       }
@@ -84,6 +87,31 @@ function parseYAMLOrJSONFileData(fileData: IacFileData): any[] {
   return yamlDocuments;
 }
 
+// export function isCloudFormationTemplate(parsedYAMLDocuments) {
+//
+//     if (_.get(doc, 'Resources')) {
+//       console.log('Resources exist at top level - cloudformation file detected');
+//       return true;
+//     } else {
+//       console.log('NOPE');
+//       return false;
+//     }
+// }
+
+export function tryParsingCloudFormationTemplate(
+  fileData: IacFileData,
+  parsedIacFile: any[],
+) {
+  return parsedIacFile.map((parsedIaCFile) => {
+    return {
+      ...fileData,
+      jsonContent: parsedIaCFile,
+      projectType: IacProjectType.CLOUDFORMATION,
+      engineType: EngineType.CloudFormation,
+    };
+  });
+}
+
 export function tryParseIacFile(
   fileData: IacFileData,
   options: IaCTestFlags = {},
@@ -93,7 +121,7 @@ export function tryParseIacFile(
     case 'yaml':
     case 'yml': {
       const parsedIacFile = parseYAMLOrJSONFileData(fileData);
-      return tryParsingKubernetesFile(fileData, parsedIacFile);
+      return tryParsingYAMLFile(fileData, parsedIacFile);
     }
     case 'json': {
       const parsedIacFile = parseYAMLOrJSONFileData(fileData);
@@ -106,7 +134,7 @@ export function tryParseIacFile(
         });
       } else {
         try {
-          return tryParsingKubernetesFile(fileData, parsedIacFile);
+          return tryParsingYAMLFile(fileData, parsedIacFile);
         } catch (e) {
           if (e instanceof MissingRequiredFieldsInKubernetesYamlError) {
             throw new FailedToDetectJsonFileError(fileData.filePath);

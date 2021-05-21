@@ -5,7 +5,7 @@ import {
   IacFileData,
   IacFileParsed,
 } from '../../../../src/cli/commands/test/iac-local-execution/types';
-import { MissingRequiredFieldsInKubernetesYamlError } from '../../../../src/cli/commands/test/iac-local-execution/parsers/kubernetes-parser';
+import { MissingRequiredFieldsInKubernetesYamlError } from '../../../../src/cli/commands/test/iac-local-execution/parsers/yaml-parser';
 import {
   getExpectedResult,
   PlanOutputCase,
